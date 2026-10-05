@@ -1,0 +1,167 @@
+.vss-section-order {
+	margin: 0 0 6px;
+	padding: 0;
+	list-style: none;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.vss-section-order-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: #fff;
+	padding: 8px 10px;
+	border-bottom: 1px solid #dcdcde;
+	cursor: default;
+}
+
+.vss-section-order-item:last-child {
+	border-bottom: none;
+}
+
+.vss-section-order-item.ui-sortable-helper {
+	box-shadow: 0 2px 6px rgba( 0, 0, 0, 0.15 );
+}
+
+.vss-drag-handle {
+	cursor: grab;
+	color: #8c8f94;
+	font-size: 14px;
+	line-height: 1;
+}
+
+.vss-section-order-item label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: 13px;
+}
+
+/* ---------- Repeater control (slides, collections, cards) ---------- */
+
+.tw-repeater {
+	margin: 0 0 8px;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.tw-repeater-block {
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.tw-repeater-block.ui-sortable-helper {
+	box-shadow: 0 2px 6px rgba( 0, 0, 0, 0.15 );
+}
+
+.tw-repeater-block-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 10px;
+}
+
+.tw-repeater-drag-handle {
+	cursor: grab;
+	color: #8c8f94;
+	font-size: 14px;
+	flex-shrink: 0;
+}
+
+.tw-repeater-block-toggle {
+	flex: 1;
+	text-align: left;
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.tw-repeater-remove {
+	background: none;
+	border: none;
+	color: #b32d2e;
+	cursor: pointer;
+	font-size: 13px;
+	padding: 2px 4px;
+	flex-shrink: 0;
+}
+
+.tw-repeater-remove:disabled {
+	color: #c3c4c7;
+	cursor: not-allowed;
+}
+
+.tw-repeater-block-body {
+	padding: 4px 10px 10px;
+	border-top: 1px solid #f0f0f1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tw-repeater-block.is-collapsed .tw-repeater-block-body {
+	display: none;
+}
+
+.tw-repeater-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.tw-repeater-field input,
+.tw-repeater-field textarea,
+.tw-repeater-field select {
+	font-size: 13px;
+	font-weight: 400;
+	width: 100%;
+}
+
+.tw-repeater-add {
+	width: 100%;
+	text-align: center;
+	justify-content: center;
+}
+
+.tw-repeater-template {
+	display: none;
+}
+
+.tw-hidden {
+	display: none !important;
+}
+
+.tw-repeater-image {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.tw-repeater-image-preview {
+	width: 44px;
+	height: 44px;
+	object-fit: cover;
+	border-radius: 4px;
+	border: 1px solid #dcdcde;
+	flex-shrink: 0;
+}
+
+.tw-repeater-image-buttons {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
