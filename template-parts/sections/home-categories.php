@@ -54,6 +54,15 @@ if ( empty( $tiles ) ) {
 	);
 	return;
 }
+
+$total_tiles = count( $tiles );
+$limit       = max( 0, (int) vss_field( 'home', 'categories', 'limit' ) );
+if ( $limit ) {
+	$tiles = array_slice( $tiles, 0, $limit );
+}
+
+$view_all_text = vss_field( 'home', 'categories', 'view_all_text' );
+$view_all_link = vss_field( 'home', 'categories', 'view_all_link' );
 ?>
 <section class="tw-section">
 	<div class="tw-container">
@@ -75,5 +84,16 @@ if ( empty( $tiles ) ) {
 				</a>
 			<?php endforeach; ?>
 		</div>
+		<?php if ( $view_all_text && $view_all_link ) : ?>
+			<div class="tw-cat-view-all">
+				<a href="<?php echo esc_url( $view_all_link ); ?>" class="tw-btn tw-btn-outline tw-cat-view-all-btn">
+					<span><?php echo esc_html( $view_all_text ); ?></span>
+					<?php if ( $limit && $total_tiles > $limit ) : ?>
+						<span class="tw-cat-view-all-count"><?php echo esc_html( $total_tiles ); ?></span>
+					<?php endif; ?>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+				</a>
+			</div>
+		<?php endif; ?>
 	</div>
 </section>

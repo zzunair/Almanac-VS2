@@ -1,6 +1,6 @@
 <?php
 /**
- * Almanac VS theme functions.
+ * Theme functions.
  */
 
 // Tied to style.css's own last-modified time so every asset that uses this
@@ -12,6 +12,7 @@ require_once get_template_directory() . '/inc/section-defs.php';
 require_once get_template_directory() . '/inc/template-functions.php';
 require_once get_template_directory() . '/inc/customizer.php';
 require_once get_template_directory() . '/inc/woocommerce.php';
+require_once get_template_directory() . '/inc/seo.php';
 
 function vss_setup() {
 	add_theme_support( 'title-tag' );
@@ -46,7 +47,8 @@ function vss_enqueue_assets() {
 	$font = get_theme_mod( 'vss_font_family', 'Manrope' );
 	wp_enqueue_style( 'vss-fonts', vss_google_font_url( $font ), array(), null );
 	wp_enqueue_style( 'vss-style', get_stylesheet_uri(), array(), VSS_VERSION );
-	wp_enqueue_script( 'vss-frontend', get_template_directory_uri() . '/assets/js/frontend.js', array(), VSS_VERSION, true );
+	$script_deps = ( function_exists( 'vss_ecommerce_enabled' ) && vss_ecommerce_enabled() ) ? array( 'jquery' ) : array();
+	wp_enqueue_script( 'vss-frontend', get_template_directory_uri() . '/assets/js/frontend.js', $script_deps, VSS_VERSION, true );
 	wp_localize_script(
 		'vss-frontend',
 		'vssSearch',
@@ -141,7 +143,7 @@ function vss_woocommerce_missing_notice() {
 	}
 	?>
 	<div class="notice notice-error">
-		<p><strong>Almanac VS</strong> requires the WooCommerce plugin to show products, the Shop page, and related sections. Please <a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=woocommerce&tab=search&type=term' ) ); ?>">install and activate WooCommerce</a>.</p>
+		<p><strong><?php echo esc_html( wp_get_theme()->get( 'Name' ) ); ?></strong> requires the WooCommerce plugin to show products, the Shop page, and related sections. Please <a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=woocommerce&tab=search&type=term' ) ); ?>">install and activate WooCommerce</a>.</p>
 	</div>
 	<?php
 }

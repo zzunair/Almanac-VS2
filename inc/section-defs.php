@@ -105,8 +105,11 @@ function vss_section_defs() {
 				'categories' => array(
 					'label'  => 'Collection List',
 					'fields' => array(
-						'heading'     => array( 'type' => 'text', 'label' => 'Heading', 'default' => 'Shop by category' ),
-						'collections' => array(
+						'heading'       => array( 'type' => 'text', 'label' => 'Heading', 'default' => 'Shop by category' ),
+						'limit'         => array( 'type' => 'number', 'label' => 'Number of categories to show (0 = show all)', 'default' => 10, 'input_attrs' => array( 'min' => 0, 'max' => 60 ) ),
+						'view_all_text' => array( 'type' => 'text', 'label' => '"View all categories" button text (leave empty to hide)', 'default' => 'View all categories' ),
+						'view_all_link' => array( 'type' => 'url', 'label' => '"View all categories" button link', 'default' => '/shop/' ),
+						'collections'   => array(
 							'type'            => 'repeater',
 							'label'           => 'Collections',
 							'title_field'     => 'category',
@@ -220,9 +223,9 @@ function vss_section_defs() {
 								'rating'   => array( 'type' => 'number', 'label' => 'Star rating (1-5)', 'default' => 5 ),
 							),
 							'default_blocks'  => array(
-								array( 'quote' => 'Reserved a mower online and it was waiting for me the next morning. Zero hassle.', 'name' => 'Dana R.', 'location' => 'Millbrook', 'rating' => 5 ),
-								array( 'quote' => 'Filters actually show real stock counts, so I never make a trip for something they don’t have.', 'name' => 'Carl W.', 'location' => 'Fairview Heights', 'rating' => 5 ),
-								array( 'quote' => 'Service team is honest about what actually needs fixing. Appreciate that.', 'name' => 'Priya S.', 'location' => 'Millbrook', 'rating' => 5 ),
+								array( 'quote' => 'Reserved a mower online and it was waiting for me the next morning. Zero hassle.', 'name' => 'Dana R.', 'location' => 'Your City', 'rating' => 5 ),
+								array( 'quote' => 'Filters actually show real stock counts, so I never make a trip for something they don’t have.', 'name' => 'Carl W.', 'location' => 'Your City', 'rating' => 5 ),
+								array( 'quote' => 'Service team is honest about what actually needs fixing. Appreciate that.', 'name' => 'Priya S.', 'location' => 'Your City', 'rating' => 5 ),
 							),
 						),
 					),
@@ -231,7 +234,7 @@ function vss_section_defs() {
 					'label'  => 'About Teaser',
 					'fields' => array(
 						'heading'     => array( 'type' => 'text', 'label' => 'Heading', 'default' => 'A local dealer, not a warehouse' ),
-						'body'        => array( 'type' => 'textarea', 'label' => 'Body text', 'default' => "We've served Millbrook since 1994 — stocking, servicing, and standing behind the equipment we sell. Come see the floor for yourself." ),
+						'body'        => array( 'type' => 'textarea', 'label' => 'Body text', 'default' => "We're your local dealer — stocking, servicing, and standing behind the equipment we sell. Come see the floor for yourself." ),
 						'link_text'   => array( 'type' => 'text', 'label' => 'Link text', 'default' => 'More about us' ),
 						'link_href'   => array( 'type' => 'url', 'label' => 'Link URL', 'default' => '/about/' ),
 						'image'       => array( 'type' => 'image', 'label' => 'Photo (leave empty to keep placeholder)', 'default' => '' ),
@@ -288,7 +291,7 @@ function vss_section_defs() {
 				'product_main' => array(
 					'label'  => 'Gallery, Info & Reserve Form',
 					'fields' => array(
-						'stock_location_suffix' => array( 'type' => 'text', 'label' => 'Stock quantity suffix', 'default' => ' units at Millbrook location' ),
+						'stock_location_suffix' => array( 'type' => 'text', 'label' => 'Stock quantity suffix', 'default' => ' units in store' ),
 						'main_photo_placeholder' => array( 'type' => 'text', 'label' => 'Main photo placeholder text', 'default' => 'Main Product Photo' ),
 						'reserve_heading'       => array( 'type' => 'text', 'label' => 'Reserve box heading', 'default' => 'Reserve this item' ),
 						'reserve_intro'         => array( 'type' => 'textarea', 'label' => 'Reserve box intro text', 'default' => "We'll hold this item for 24 hours after you reserve. No payment required." ),
@@ -514,16 +517,16 @@ function vss_section_defs() {
 							),
 							'default_blocks'  => array(
 								array(
-									'name'            => 'Millbrook — Main Store',
-									'address'         => "412 Industrial Pkwy\nMillbrook, OH 43920",
-									'phone'           => '(555) 019-2244',
+									'name'            => 'Main Store',
+									'address'         => "123 Main Street\nYour City, ST 00000",
+									'phone'           => '(123) 456-7890',
 									'hours'           => 'Mon–Fri 8am–6pm · Sat 8am–4pm · Sun Closed',
 									'directions_link' => '',
 								),
 								array(
-									'name'            => 'Fairview Heights — Branch',
-									'address'         => "88 Ridge Rd\nFairview Heights, OH 43955",
-									'phone'           => '(555) 044-7710',
+									'name'            => 'Second Location',
+									'address'         => "456 Second Avenue\nYour City, ST 00000",
+									'phone'           => '(123) 456-7891',
 									'hours'           => 'Mon–Fri 9am–5:30pm · Sat 9am–2pm · Sun Closed',
 									'directions_link' => '',
 								),
@@ -544,9 +547,9 @@ function vss_section_defs() {
 						'message_placeholder' => array( 'type' => 'text', 'label' => 'Message field placeholder', 'default' => 'How can we help?' ),
 						'send_button_text'  => array( 'type' => 'text', 'label' => 'Send button text', 'default' => 'Send message' ),
 						'address_label'     => array( 'type' => 'text', 'label' => 'Address label', 'default' => 'address' ),
-						'address_text'      => array( 'type' => 'textarea', 'label' => 'Address text', 'default' => "412 Industrial Pkwy\nMillbrook, OH 43920" ),
+						'address_text'      => array( 'type' => 'textarea', 'label' => 'Address text', 'default' => "123 Main Street\nYour City, ST 00000" ),
 						'phone_email_label' => array( 'type' => 'text', 'label' => 'Phone & email label', 'default' => 'phone & email' ),
-						'phone_email_text'  => array( 'type' => 'textarea', 'label' => 'Phone & email text', 'default' => "(555) 019-2244\nsales@vss-example.com" ),
+						'phone_email_text'  => array( 'type' => 'textarea', 'label' => 'Phone & email text', 'default' => "(123) 456-7890\nhello@yourstore.com" ),
 						'hours_label'       => array( 'type' => 'text', 'label' => 'Hours label', 'default' => 'store hours' ),
 						'hours_text'        => array( 'type' => 'textarea', 'label' => 'Hours text', 'default' => "Mon–Fri: 8am – 6pm\nSaturday: 8am – 4pm\nSunday: Closed" ),
 					),
@@ -563,7 +566,7 @@ function vss_section_defs() {
 					'fields' => array(
 						'eyebrow' => array( 'type' => 'text', 'label' => 'Eyebrow tag', 'default' => 'OUR STORY' ),
 						'heading' => array( 'type' => 'text', 'label' => 'Heading', 'default' => 'About ' . get_bloginfo( 'name' ) ),
-						'body1'   => array( 'type' => 'textarea', 'label' => 'Paragraph 1', 'default' => get_bloginfo( 'name' ) . ' is a family-run outdoor power equipment dealer serving Millbrook and the surrounding area since 1994. We stock mowers, chainsaws, trimmers, generators, and snow blowers from trusted brands, and back every sale with in-house service.' ),
+						'body1'   => array( 'type' => 'textarea', 'label' => 'Paragraph 1', 'default' => get_bloginfo( 'name' ) . ' is a family-run outdoor power equipment dealer serving Your City and the surrounding area. We stock mowers, chainsaws, trimmers, generators, and snow blowers from trusted brands, and back every sale with in-house service.' ),
 						'body2'   => array( 'type' => 'textarea', 'label' => 'Paragraph 2', 'default' => "Inventory and pricing shown online reflect what's actually on our floor. Reserve an item and we'll hold it for 24 hours while you finalize your visit." ),
 					),
 				),
@@ -583,7 +586,7 @@ function vss_section_defs() {
 							'default_blocks'  => array(
 								array( 'title' => 'Accurate inventory', 'desc' => "Stock counts reflect what's on our floor, updated regularly." ),
 								array( 'title' => 'Genuine parts', 'desc' => 'Manufacturer-authorized parts and service for every brand we carry.' ),
-								array( 'title' => 'Local service', 'desc' => 'Tune-ups, repairs, and reservations handled by our Millbrook team.' ),
+								array( 'title' => 'Local service', 'desc' => 'Tune-ups, repairs, and reservations handled by our local team.' ),
 							),
 						),
 					),

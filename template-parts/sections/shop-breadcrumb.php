@@ -1,11 +1,12 @@
 <?php
 /** Shop / breadcrumb. */
-$crumb = 'Home / Shop';
+$items = array(
+	array( 'label' => 'Home', 'url' => home_url( '/' ) ),
+	array( 'label' => 'Shop', 'url' => wc_get_page_permalink( 'shop' ) ),
+);
 if ( is_product_taxonomy() ) {
-	$term  = get_queried_object();
-	$crumb = 'Home / Shop / ' . $term->name;
+	$items = array_merge( $items, vss_breadcrumb_term_items( get_queried_object() ) );
 } elseif ( is_search() ) {
-	$crumb = 'Home / Shop / Search results for "' . get_search_query( false ) . '"';
+	$items[] = array( 'label' => 'Search results for "' . get_search_query( false ) . '"', 'url' => '' );
 }
-?>
-<div class="tw-container tw-breadcrumb"><?php echo esc_html( $crumb ); ?></div>
+vss_breadcrumb( $items );

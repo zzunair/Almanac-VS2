@@ -9,10 +9,104 @@
 	var navToggle = document.querySelector( '.tw-nav-toggle' );
 	var headerControls = document.getElementById( 'tw-header-controls' );
 	if ( navToggle && headerControls ) {
-		navToggle.addEventListener( 'click', function () {
-			var isOpen = headerControls.classList.toggle( 'is-open' );
+		var navBackdrop = document.querySelector( '.tw-nav-backdrop' );
+		var navClose = headerControls.querySelector( '.tw-drawer-close' );
+
+		function setNav( isOpen ) {
+			headerControls.classList.toggle( 'is-open', isOpen );
 			navToggle.classList.toggle( 'is-open', isOpen );
 			navToggle.setAttribute( 'aria-expanded', isOpen ? 'true' : 'false' );
+			document.body.classList.toggle( 'tw-nav-open', isOpen );
+			if ( isOpen && navClose ) {
+				navClose.focus();
+			}
+		}
+
+		navToggle.addEventListener( 'click', function () {
+			setNav( ! headerControls.classList.contains( 'is-open' ) );
+		} );
+		if ( navClose ) {
+			navClose.addEventListener( 'click', function () {
+				setNav( false );
+				navToggle.focus();
+			} );
+		}
+		if ( navBackdrop ) {
+			navBackdrop.addEventListener( 'click', function () {
+				setNav( false );
+			} );
+		}
+		headerControls.addEventListener( 'click', function ( e ) {
+			if ( e.target.closest( 'a' ) ) {
+				setNav( false );
+			}
+		} );
+		document.addEventListener( 'keydown', function ( e ) {
+			if ( 'Escape' === e.key && headerControls.classList.contains( 'is-open' ) ) {
+				setNav( false );
+				navToggle.focus();
+			}
+		} );
+	}
+
+	var siteHeader = document.querySelector( '.tw-header' );
+	if ( siteHeader ) {
+		var markScrolled = function () {
+			siteHeader.classList.toggle( 'is-scrolled', window.scrollY > 40 );
+		};
+		window.addEventListener( 'scroll', markScrolled, { passive: true } );
+		markScrolled();
+	}
+
+	var searchOpen = document.querySelector( '.tw-search-open' );
+	var searchOverlay = document.getElementById( 'tw-search-overlay' );
+	if ( searchOpen && searchOverlay ) {
+		var searchDialog = searchOverlay.querySelector( '.tw-search-dialog' );
+		var searchInput = searchOverlay.querySelector( 'input[name="s"]' );
+		var searchClose = searchOverlay.querySelector( '.tw-search-close' );
+		var searchDropdown = searchOverlay.querySelector( '.tw-search-suggestions' );
+
+		function openSearch() {
+			searchOverlay.hidden = false;
+			document.body.classList.add( 'tw-search-open' );
+			searchOpen.setAttribute( 'aria-expanded', 'true' );
+			window.setTimeout( function () {
+				if ( ! searchInput ) {
+					return;
+				}
+				searchInput.focus();
+				if ( searchInput.value.trim().length >= 2 ) {
+					searchInput.dispatchEvent( new Event( 'input' ) );
+				}
+			}, 30 );
+		}
+
+		function closeSearch() {
+			if ( searchOverlay.hidden ) {
+				return;
+			}
+			searchOverlay.hidden = true;
+			document.body.classList.remove( 'tw-search-open' );
+			searchOpen.setAttribute( 'aria-expanded', 'false' );
+			if ( searchDropdown ) {
+				searchDropdown.hidden = true;
+			}
+			searchOpen.focus();
+		}
+
+		searchOpen.addEventListener( 'click', openSearch );
+		if ( searchClose ) {
+			searchClose.addEventListener( 'click', closeSearch );
+		}
+		searchOverlay.addEventListener( 'click', function ( e ) {
+			if ( searchDialog && ! searchDialog.contains( e.target ) ) {
+				closeSearch();
+			}
+		} );
+		document.addEventListener( 'keydown', function ( e ) {
+			if ( 'Escape' === e.key ) {
+				closeSearch();
+			}
 		} );
 	}
 
@@ -47,6 +141,47 @@
 			} );
 		}
 	} );
+
+	var requestOpen = document.querySelector( '.tw-request-open' );
+	var requestOverlay = document.getElementById( 'tw-request-modal' );
+	if ( requestOpen && requestOverlay ) {
+		var requestDialog = requestOverlay.querySelector( '.tw-request-dialog' );
+		var requestClose = requestOverlay.querySelector( '.tw-request-close' );
+
+		function openRequest() {
+			requestOverlay.hidden = false;
+			document.body.classList.add( 'tw-request-open' );
+			requestOpen.setAttribute( 'aria-expanded', 'true' );
+			if ( requestClose ) {
+				requestClose.focus();
+			}
+		}
+
+		function closeRequest() {
+			if ( requestOverlay.hidden ) {
+				return;
+			}
+			requestOverlay.hidden = true;
+			document.body.classList.remove( 'tw-request-open' );
+			requestOpen.setAttribute( 'aria-expanded', 'false' );
+			requestOpen.focus();
+		}
+
+		requestOpen.addEventListener( 'click', openRequest );
+		if ( requestClose ) {
+			requestClose.addEventListener( 'click', closeRequest );
+		}
+		requestOverlay.addEventListener( 'click', function ( e ) {
+			if ( requestDialog && ! requestDialog.contains( e.target ) ) {
+				closeRequest();
+			}
+		} );
+		document.addEventListener( 'keydown', function ( e ) {
+			if ( 'Escape' === e.key ) {
+				closeRequest();
+			}
+		} );
+	}
 
 	document.querySelectorAll( '.tw-contact-form' ).forEach( function ( form ) {
 		form.addEventListener( 'submit', function ( e ) {
@@ -106,8 +241,8 @@
 
 		function render( items, term ) {
 			if ( ! items.length ) {
-				dropdown.innerHTML = '';
-				dropdown.hidden = true;
+				dropdown.innerHTML = '<p class="tw-search-empty">No products match &ldquo;' + escapeHtml( term ) + '&rdquo;</p>';
+				dropdown.hidden = false;
 				return;
 			}
 			var html = items
@@ -249,8 +384,10 @@
 
 	// Product compare: entirely client-side (localStorage) -- no account,
 	// no server round trip. Selecting a card's checkbox snapshots the data
-	// already on the page (name/brand/price/image/badge) so the comparison
-	// view never has to re-fetch anything.
+	// already on the page (name, price, description, specs) so the
+	// comparison view never has to re-fetch anything. Opening the
+	// comparison writes #compare onto the current page, so Back from a
+	// product returns to the comparison instead of the product grid.
 	var compareBar = document.getElementById( 'tw-compare-bar' );
 	if ( compareBar ) {
 		var STORAGE_KEY   = 'tw_compare_items';
@@ -309,6 +446,17 @@
 
 		function refresh() {
 			var store = readStore();
+			var enriched = false;
+			document.querySelectorAll( '.tw-compare-checkbox' ).forEach( function ( box ) {
+				var id = box.getAttribute( 'data-id' );
+				if ( store[ id ] ) {
+					store[ id ] = snapshotFromBox( box );
+					enriched = true;
+				}
+			} );
+			if ( enriched ) {
+				writeStore( store );
+			}
 			syncCheckboxes( store );
 			updateBar( store );
 			return store;
@@ -316,6 +464,42 @@
 
 		function closeModal() {
 			modal.hidden = true;
+			if ( '#compare' === window.location.hash ) {
+				history.replaceState( null, '', window.location.pathname + window.location.search );
+			}
+		}
+
+		function snapshotFromBox( box ) {
+			var specs = [];
+			try {
+				specs = JSON.parse( box.getAttribute( 'data-specs' ) || '[]' ) || [];
+			} catch ( err ) {
+				specs = [];
+			}
+			if ( ! Array.isArray( specs ) ) {
+				specs = [];
+			}
+			return {
+				name:        box.getAttribute( 'data-name' ) || '',
+				brand:       box.getAttribute( 'data-brand' ) || '',
+				price:       box.getAttribute( 'data-price' ) || '',
+				image:       box.getAttribute( 'data-image' ) || '',
+				url:         box.getAttribute( 'data-url' ) || '',
+				badge:       box.getAttribute( 'data-badge' ) || '',
+				badgeClass:  box.getAttribute( 'data-badge-class' ) || '',
+				description: box.getAttribute( 'data-description' ) || '',
+				specs:       specs,
+			};
+		}
+
+		function specValue( item, label ) {
+			var specs = item && Array.isArray( item.specs ) ? item.specs : [];
+			for ( var i = 0; i < specs.length; i++ ) {
+				if ( specs[ i ] && specs[ i ].label === label ) {
+					return specs[ i ].value || '';
+				}
+			}
+			return '';
 		}
 
 		function renderModal( store ) {
@@ -324,23 +508,67 @@
 				modalBody.innerHTML = '';
 				return;
 			}
-			modalBody.innerHTML = ids
-				.map( function ( id ) {
-					var item = store[ id ];
-					var img = item.image ? '<img src="' + compareEscape( item.image ) + '" alt="" />' : '';
+
+			var items = ids.map( function ( id ) { return store[ id ]; } );
+			var labels = [];
+			items.forEach( function ( item ) {
+				( item.specs || [] ).forEach( function ( spec ) {
+					if ( spec && spec.label && labels.indexOf( spec.label ) === -1 ) {
+						labels.push( spec.label );
+					}
+				} );
+			} );
+			var showBlurb = items.some( function ( item ) { return !! ( item.description || '' ).trim(); } );
+
+			function hero( id ) {
+				var item = store[ id ];
+				var img = item.image ? '<img src="' + compareEscape( item.image ) + '" alt="" />' : '';
+				return (
+					'<div class="tw-compare-item">' +
+					'<button type="button" class="tw-compare-item-remove" data-remove-id="' + compareEscape( id ) + '" aria-label="Remove">&times;</button>' +
+					'<div class="tw-compare-item-img">' + img + '</div>' +
+					'<span class="tw-compare-item-brand">' + compareEscape( item.brand ) + '</span>' +
+					'<span class="tw-compare-item-name">' + compareEscape( item.name ) + '</span>' +
+					'<span class="tw-compare-item-price">' + compareEscape( item.price ) + '</span>' +
+					'<span class="tw-badge ' + compareEscape( item.badgeClass ) + '">' + compareEscape( item.badge ) + '</span>' +
+					'</div>'
+				);
+			}
+
+			var html = '<div class="tw-compare-sheet" style="grid-template-columns:repeat(' + ids.length + ',minmax(220px,1fr))">';
+			html += ids.map( hero ).join( '' );
+
+			if ( showBlurb ) {
+				html += ids.map( function ( id ) {
+					var text = ( store[ id ].description || '' ).trim();
 					return (
-						'<div class="tw-compare-item">' +
-						'<button type="button" class="tw-compare-item-remove" data-remove-id="' + compareEscape( id ) + '" aria-label="Remove">&times;</button>' +
-						'<div class="tw-compare-item-img">' + img + '</div>' +
-						'<span class="tw-compare-item-brand">' + compareEscape( item.brand ) + '</span>' +
-						'<span class="tw-compare-item-name">' + compareEscape( item.name ) + '</span>' +
-						'<span class="tw-compare-item-price">' + compareEscape( item.price ) + '</span>' +
-						'<span class="tw-badge ' + compareEscape( item.badgeClass ) + '">' + compareEscape( item.badge ) + '</span>' +
-						'<a href="' + compareEscape( item.url ) + '" class="tw-btn tw-btn-outline" style="margin-top:6px;">' + compareEscape( viewText ) + '</a>' +
+						'<div class="tw-compare-blurb">' +
+						'<span class="tw-compare-spec-label">About</span>' +
+						'<p>' + ( text ? compareEscape( text ) : '' ) + '</p>' +
 						'</div>'
 					);
-				} )
-				.join( '' );
+				} ).join( '' );
+			}
+
+			labels.forEach( function ( label ) {
+				var values = ids.map( function ( id ) { return specValue( store[ id ], label ).trim(); } );
+				var differs = values.some( function ( value ) { return value !== values[ 0 ]; } );
+				html += ids.map( function ( id, index ) {
+					return (
+						'<div class="tw-compare-spec' + ( differs ? ' is-diff' : '' ) + '">' +
+						'<span class="tw-compare-spec-label">' + compareEscape( label ) + '</span>' +
+						'<span class="tw-compare-spec-value">' + ( values[ index ] ? compareEscape( values[ index ] ) : '—' ) + '</span>' +
+						'</div>'
+					);
+				} ).join( '' );
+			} );
+
+			html += ids.map( function ( id ) {
+				return '<a class="tw-btn tw-btn-outline tw-compare-view" href="' + compareEscape( store[ id ].url ) + '">' + compareEscape( viewText ) + '</a>';
+			} ).join( '' );
+			html += '</div>';
+
+			modalBody.innerHTML = html;
 
 			modalBody.querySelectorAll( '[data-remove-id]' ).forEach( function ( btn ) {
 				btn.addEventListener( 'click', function () {
@@ -360,8 +588,14 @@
 
 		function openModal() {
 			var store = readStore();
+			if ( ! Object.keys( store ).length ) {
+				return;
+			}
 			renderModal( store );
 			modal.hidden = false;
+			if ( '#compare' !== window.location.hash ) {
+				history.replaceState( null, '', window.location.pathname + window.location.search + '#compare' );
+			}
 		}
 
 		document.addEventListener( 'change', function ( e ) {
@@ -377,15 +611,7 @@
 					window.alert( maxTextTpl.replace( '{max}', maxItems ) );
 					return;
 				}
-				store[ id ] = {
-					name:       box.getAttribute( 'data-name' ) || '',
-					brand:      box.getAttribute( 'data-brand' ) || '',
-					price:      box.getAttribute( 'data-price' ) || '',
-					image:      box.getAttribute( 'data-image' ) || '',
-					url:        box.getAttribute( 'data-url' ) || '',
-					badge:      box.getAttribute( 'data-badge' ) || '',
-					badgeClass: box.getAttribute( 'data-badge-class' ) || '',
-				};
+				store[ id ] = snapshotFromBox( box );
 			} else {
 				delete store[ id ];
 			}
@@ -410,6 +636,51 @@
 		} );
 
 		refresh();
+		if ( '#compare' === window.location.hash ) {
+			openModal();
+		}
 	}
+
+	function markCartAdded( button ) {
+		if ( ! button ) {
+			return;
+		}
+		button.classList.add( 'is-added' );
+		window.setTimeout( function () {
+			button.classList.remove( 'is-added', 'added' );
+		}, 2500 );
+	}
+
+	var addedToCartBound = false;
+	function bindAddedToCart() {
+		if ( addedToCartBound || ! window.jQuery ) {
+			return !! window.jQuery;
+		}
+		addedToCartBound = true;
+		window.jQuery( document.body ).on( 'added_to_cart', function ( e, fragments, cartHash, $button ) {
+			markCartAdded( $button && $button.length ? $button[0] : document.querySelector( '.tw-card-cart.added' ) );
+		} );
+		return true;
+	}
+
+	if ( ! bindAddedToCart() ) {
+		window.addEventListener( 'load', bindAddedToCart );
+	}
+
+	document.addEventListener( 'click', function ( e ) {
+		var button = e.target.closest && e.target.closest( '.tw-card-cart.ajax_add_to_cart' );
+		if ( ! button ) {
+			return;
+		}
+		var started = Date.now();
+		var timer = window.setInterval( function () {
+			if ( button.classList.contains( 'added' ) ) {
+				markCartAdded( button );
+				window.clearInterval( timer );
+			} else if ( Date.now() - started > 4000 ) {
+				window.clearInterval( timer );
+			}
+		}, 50 );
+	} );
 
 } )();

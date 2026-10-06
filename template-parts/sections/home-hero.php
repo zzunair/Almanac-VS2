@@ -12,6 +12,7 @@ $trust_text = vss_field( 'home', 'hero', 'trust_text' );
 			<?php
 			$layout     = ! empty( $slide['layout'] ) ? $slide['layout'] : 'split';
 			$text_align = ! empty( $slide['text_align'] ) ? $slide['text_align'] : 'left';
+			$heading_tag = 0 === $i ? 'h1' : 'h2';
 			?>
 			<?php if ( 'banner' === $layout ) : ?>
 				<div
@@ -22,7 +23,7 @@ $trust_text = vss_field( 'home', 'hero', 'trust_text' );
 					<div class="tw-container">
 						<div class="tw-hero-banner-content">
 							<?php if ( $slide['eyebrow'] ) : ?><div class="tw-eyebrow"><?php echo esc_html( $slide['eyebrow'] ); ?></div><?php endif; ?>
-							<h1 class="tw-hero-heading"><?php echo esc_html( $slide['heading'] ); ?></h1>
+							<<?php echo $heading_tag; ?> class="tw-hero-heading"><?php echo esc_html( $slide['heading'] ); ?></<?php echo $heading_tag; ?>>
 							<?php if ( $slide['body'] ) : ?><p class="tw-hero-body"><?php echo esc_html( $slide['body'] ); ?></p><?php endif; ?>
 							<div class="tw-hero-buttons">
 								<?php if ( $slide['button_text'] ) : ?>
@@ -46,7 +47,7 @@ $trust_text = vss_field( 'home', 'hero', 'trust_text' );
 					<div class="tw-slide<?php echo 0 === $i ? ' is-active' : ''; ?>">
 						<div class="tw-hero-copy">
 							<?php if ( $slide['eyebrow'] ) : ?><div class="tw-eyebrow"><?php echo esc_html( $slide['eyebrow'] ); ?></div><?php endif; ?>
-							<h1 class="tw-hero-heading"><?php echo esc_html( $slide['heading'] ); ?></h1>
+							<<?php echo $heading_tag; ?> class="tw-hero-heading"><?php echo esc_html( $slide['heading'] ); ?></<?php echo $heading_tag; ?>>
 							<?php if ( $slide['body'] ) : ?><p class="tw-hero-body"><?php echo esc_html( $slide['body'] ); ?></p><?php endif; ?>
 							<div class="tw-hero-buttons">
 								<?php if ( $slide['button_text'] ) : ?>
@@ -66,7 +67,7 @@ $trust_text = vss_field( 'home', 'hero', 'trust_text' );
 
 						<div class="tw-hero-card">
 							<?php if ( $slide['image'] ) : ?>
-								<img src="<?php echo esc_url( $slide['image'] ); ?>" alt="" class="tw-hero-card-img" />
+								<img src="<?php echo esc_url( $slide['image'] ); ?>" alt="<?php echo esc_attr( $slide['heading'] ); ?>" class="tw-hero-card-img"<?php echo 0 === $i ? ' fetchpriority="high"' : ' loading="lazy"'; ?> />
 							<?php else : ?>
 								<div class="tw-hero-card-pattern"></div>
 								<svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="var(--tw-accent)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="tw-hero-card-icon"><circle cx="12" cy="12" r="9"/><path d="M8 13.5l2.5-5 2 3.5 1.5-2 2 3"/></svg>

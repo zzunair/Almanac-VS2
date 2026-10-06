@@ -3,9 +3,9 @@
  * WooCommerce integration: theme support, the custom "Brand" taxonomy
  * (WooCommerce has no built-in brand taxonomy), and search config.
  *
- * archive-product.php and single-product.php in the theme root fully
- * replace WooCommerce's own markup (no cart/checkout, no upsells) since
- * this site only ever reserves an item in-store -- it never sells online.
+ * archive-product.php and single-product.php in the theme root replace
+ * WooCommerce's catalog markup. Cart and checkout stay off unless
+ * Site-Wide Settings → Commerce is enabled.
  */
 
 function vss_woocommerce_setup() {
@@ -45,27 +45,82 @@ function vss_product_search_url() {
 }
 
 /**
- * This theme never uses WooCommerce's cart/checkout -- items are only
- * reserved in-store via the on-page form. Strip the related front-end
- * assets so nothing half-wired leaks into the design.
+ * Site-Wide Settings → Commerce. Off by default so the site stays a showroom.
+ */
+function vss_ecommerce_enabled() {
+	return (bool) get_theme_mod( 'vss_enable_ecommerce', false );
+}
+
+/**
+ * Header cart link. Also the markup replaced by WooCommerce's cart
+ * fragments, so the count updates after an Add to cart click.
+ */
+function vss_cart_link() {
+	if ( ! vss_ecommerce_enabled() || ! function_exists( 'wc_get_cart_url' ) ) {
+		return;
+	}
+
+	$count = ( function_exists( 'WC' ) && WC()->cart ) ? WC()->cart->get_cart_contents_count() : 0;
+	$label = $count ? sprintf( 'Cart, %d items', $count ) : 'Cart';
+	?>
+	<a class="tw-cart-link" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
+		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+			<path d="M6 6h15l-1.5 9h-12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+			<path d="M6 6L5 3H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+			<circle cx="9" cy="20" r="1.4" fill="currentColor"/>
+			<circle cx="18" cy="20" r="1.4" fill="currentColor"/>
+		</svg>
+		<span class="screen-reader-text">Cart</span>
+		<?php if ( $count ) : ?>
+			<span class="tw-cart-count"><?php echo (int) $count; ?></span>
+		<?php endif; ?>
+	</a>
+	<?php
+}
+
+/**
+ * Keep the header count in sync with ajax Add to cart.
+ */
+function vss_cart_fragments( $fragments ) {
+	if ( ! vss_ecommerce_enabled() ) {
+		return $fragments;
+	}
+	ob_start();
+	vss_cart_link();
+	$fragments['a.tw-cart-link'] = ob_get_clean();
+	return $fragments;
+}
+add_filter( 'woocommerce_add_to_cart_fragments', 'vss_cart_fragments' );
+
+/**
+ * Cart scripts stay off unless Commerce is enabled. With it on, ajax Add
+ * to cart (including the homepage catalog) and the header count need them.
  */
 function vss_dequeue_woocommerce_cart_scripts() {
+	if ( vss_ecommerce_enabled() ) {
+		wp_enqueue_script( 'wc-add-to-cart' );
+		wp_enqueue_script( 'wc-cart-fragments' );
+		return;
+	}
 	wp_dequeue_script( 'wc-cart-fragments' );
 	wp_dequeue_script( 'wc-add-to-cart' );
 }
 add_action( 'wp_enqueue_scripts', 'vss_dequeue_woocommerce_cart_scripts', 20 );
 
 /**
- * WooCommerce always creates Cart / Checkout / My Account pages, but this
- * theme has no template for them -- a visitor who ends up there (an old
- * link, a bot, a stray "add to cart") would see WooCommerce's raw,
- * unstyled block markup. Send them somewhere real instead.
+ * Cart and Checkout are only reachable while Commerce is on. My Account
+ * is unused, so it always goes to the shop.
  */
 function vss_redirect_unused_woocommerce_pages() {
 	if ( is_admin() || ! function_exists( 'is_cart' ) ) {
 		return;
 	}
-	if ( is_cart() || is_checkout() || is_account_page() ) {
+	$blocked = array( is_account_page() );
+	if ( ! vss_ecommerce_enabled() ) {
+		$blocked[] = is_cart();
+		$blocked[] = is_checkout();
+	}
+	if ( in_array( true, $blocked, true ) ) {
 		wp_safe_redirect( function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' ) );
 		exit;
 	}

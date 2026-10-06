@@ -222,8 +222,11 @@ function vss_add_field_control( $wp_customize, $setting_id, $customizer_section,
 		'section' => $customizer_section,
 		'type'    => $control_type,
 	);
-	if ( 'range' === $control_type && ! empty( $field['input_attrs'] ) ) {
+	if ( in_array( $control_type, array( 'range', 'number' ), true ) && ! empty( $field['input_attrs'] ) ) {
 		$control_args['input_attrs'] = $field['input_attrs'];
+	}
+	if ( ! empty( $field['description'] ) ) {
+		$control_args['description'] = $field['description'];
 	}
 
 	$wp_customize->add_control( $setting_id, $control_args );
@@ -355,7 +358,7 @@ function vss_customize_register( $wp_customize ) {
 	$wp_customize->add_section( 'vss_announcement', array( 'title' => 'Announcement Bar', 'panel' => 'vss_global', 'priority' => 29 ) );
 
 	$announcement_fields = array(
-		'top_bar_left'  => array( 'label' => 'Left text', 'default' => 'Open today · 8am–6pm &nbsp;·&nbsp; (555) 019-2244', 'type' => 'text' ),
+		'top_bar_left'  => array( 'label' => 'Left text', 'default' => 'Open today · 8am–6pm &nbsp;·&nbsp; (123) 456-7890', 'type' => 'text' ),
 		'top_bar_right' => array( 'label' => 'Right text', 'default' => "Reserve online, no payment needed — we'll hold it 24 hrs", 'type' => 'text' ),
 		'topbar_bg'     => array( 'label' => 'Background color', 'default' => '#171310', 'type' => 'color' ),
 		'topbar_text'   => array( 'label' => 'Text color', 'default' => '#efc9a8', 'type' => 'color' ),
@@ -415,17 +418,84 @@ function vss_customize_register( $wp_customize ) {
 
 	$footer_fields = array(
 		'company_name'   => array( 'label' => 'Company name', 'default' => get_bloginfo( 'name' ), 'type' => 'text' ),
-		'address'        => array( 'label' => 'Address', 'default' => "412 Industrial Pkwy\nMillbrook, OH 43920", 'type' => 'textarea' ),
-		'phone_email'    => array( 'label' => 'Phone & email', 'default' => "(555) 019-2244\nsales@vss-example.com", 'type' => 'textarea' ),
+		'address'        => array( 'label' => 'Address', 'default' => "123 Main Street\nYour City, ST 00000", 'type' => 'textarea' ),
+		'phone_email'    => array( 'label' => 'Phone & email', 'default' => "(123) 456-7890\nhello@yourstore.com", 'type' => 'textarea' ),
 		'hours_heading'  => array( 'label' => 'Store hours column heading', 'default' => 'Store Hours', 'type' => 'text' ),
 		'hours'          => array( 'label' => 'Store hours', 'default' => "Mon–Fri · 8am–6pm\nSaturday · 8am–4pm\nSunday · Closed", 'type' => 'textarea' ),
 		'shop_heading'   => array( 'label' => 'Shop column heading', 'default' => 'Shop', 'type' => 'text' ),
 		'company_heading' => array( 'label' => 'Company column heading', 'default' => 'Company', 'type' => 'text' ),
 		'note'           => array( 'label' => 'Footer note', 'default' => 'Service & repair scheduling available in-store. Financing options available on request. Delivery & curbside pickup offered on most items.', 'type' => 'textarea' ),
-		'legal_right'    => array( 'label' => 'Legal line (right side)', 'default' => 'Design mockup — no transactions are processed on this site.', 'type' => 'text' ),
+		'legal_right'    => array( 'label' => 'Legal line (right side)', 'default' => 'All rights reserved.', 'type' => 'text' ),
 	);
 	foreach ( $footer_fields as $key => $field ) {
 		vss_add_field_control( $wp_customize, 'vss_footer_' . $key, 'vss_footer', $field );
+	}
+
+	/* ---------------- Commerce (site-wide) ---------------- */
+	$wp_customize->add_section(
+		'vss_commerce',
+		array(
+			'title'       => 'Commerce',
+			'description' => 'Off by default, so the site stays a showroom. Turn this on to sell from the catalog.',
+			'panel'       => 'vss_global',
+			'priority'    => 12,
+		)
+	);
+	vss_add_field_control(
+		$wp_customize,
+		'vss_enable_ecommerce',
+		'vss_commerce',
+		array(
+			'label'       => 'Make the site ecommerce',
+			'description' => 'Shows a cart icon in the header, an Add to cart icon on product cards (home and shop), and an Add to cart button with quantity on the product page. Cart and Checkout stay available.',
+			'default'     => false,
+			'type'        => 'checkbox',
+		)
+	);
+
+	/* ---------------- SEO (site-wide) ---------------- */
+	$wp_customize->add_section(
+		'vss_seo',
+		array(
+			'title'       => 'SEO',
+			'description' => 'Meta descriptions, social sharing and business details for search engines. If an SEO plugin (Yoast, Rank Math, All in One SEO, SEOPress) is active, it takes over and these are ignored.',
+			'panel'       => 'vss_global',
+			'priority'    => 13,
+		)
+	);
+	$seo_fields = array(
+		'home_description' => array(
+			'label'       => 'Homepage meta description',
+			'description' => 'About 150 characters shown under your site in Google. Leave empty to use the first hero slide text.',
+			'default'     => '',
+			'type'        => 'textarea',
+		),
+		'shop_description' => array(
+			'label'       => 'Shop page meta description',
+			'description' => 'Leave empty for an automatic description.',
+			'default'     => '',
+			'type'        => 'textarea',
+		),
+		'share_image'      => array(
+			'label'   => 'Default social share image (1200 × 630)',
+			'default' => '',
+			'type'    => 'image',
+		),
+		'business_type'    => array(
+			'label'       => 'Business type (schema.org)',
+			'description' => 'For example Store, HomeAndConstructionBusiness or AutomotiveBusiness. Name, phone, email and address come from the Footer settings.',
+			'default'     => 'Store',
+			'type'        => 'text',
+		),
+		'social_profiles'  => array(
+			'label'       => 'Social profile URLs',
+			'description' => 'One per line (Facebook, Instagram, YouTube…). Helps Google link your profiles to the business.',
+			'default'     => '',
+			'type'        => 'textarea',
+		),
+	);
+	foreach ( $seo_fields as $key => $field ) {
+		vss_add_field_control( $wp_customize, 'vss_seo_' . $key, 'vss_seo', $field );
 	}
 
 	/* ---------------- Footer Newsletter ---------------- */

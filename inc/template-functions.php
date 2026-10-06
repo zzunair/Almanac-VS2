@@ -342,3 +342,106 @@ function vss_stock_badge( $product ) {
 
 	return $map[ $state ];
 }
+
+/**
+ * Extra fields the compare modal shows under the price: a short blurb
+ * plus a handful of specs, so two products can be lined up against each
+ * other instead of only image, name, price, and stock.
+ */
+function vss_compare_details( $product ) {
+	$specs = array();
+
+	$sku = $product->get_sku();
+	if ( $sku ) {
+		$specs[] = array(
+			'label' => 'SKU',
+			'value' => $sku,
+		);
+	}
+
+	$categories = vss_product_categories( $product->get_id() );
+	if ( $categories ) {
+		$specs[] = array(
+			'label' => 'Category',
+			'value' => $categories[0],
+		);
+	}
+
+	$weight = $product->get_weight();
+	if ( $weight ) {
+		$specs[] = array(
+			'label' => 'Weight',
+			'value' => $weight . ' ' . get_option( 'woocommerce_weight_unit' ),
+		);
+	}
+
+	foreach ( $product->get_attributes() as $attribute ) {
+		if ( ! is_a( $attribute, 'WC_Product_Attribute' ) ) {
+			continue;
+		}
+		$label = wc_attribute_label( $attribute->get_name() );
+		if ( '' === $label || 'brand' === strtolower( $label ) ) {
+			continue;
+		}
+		if ( $attribute->is_taxonomy() ) {
+			$names = wc_get_product_terms( $product->get_id(), $attribute->get_name(), array( 'fields' => 'names' ) );
+			$value = is_wp_error( $names ) ? '' : implode( ', ', $names );
+		} else {
+			$value = implode( ', ', $attribute->get_options() );
+		}
+		if ( '' === $value ) {
+			continue;
+		}
+		$specs[] = array(
+			'label' => $label,
+			'value' => $value,
+		);
+	}
+
+	$specs = array_slice( $specs, 0, 6 );
+
+	$blurb = $product->get_short_description();
+	if ( ! $blurb ) {
+		$blurb = $product->get_description();
+	}
+	$blurb = trim( preg_replace( '/\s+/', ' ', wp_strip_all_tags( $blurb ) ) );
+	if ( $blurb ) {
+		$blurb = wp_trim_words( $blurb, 26, '…' );
+	}
+
+	return array(
+		'description' => $blurb,
+		'specs'       => $specs,
+	);
+}
+
+/**
+ * data-* attributes for a compare checkbox. Printed the same way on
+ * product cards and the product page so the saved snapshot always
+ * includes the description and specs.
+ */
+function vss_compare_checkbox_attrs( $product ) {
+	$brand_terms = wc_get_product_terms( $product->get_id(), 'product_brand', array( 'fields' => 'names' ) );
+	$badge       = vss_stock_badge( $product );
+	$image_id    = $product->get_image_id();
+	$details     = vss_compare_details( $product );
+
+	$attrs = array(
+		'data-id'          => $product->get_id(),
+		'data-name'        => $product->get_name(),
+		'data-brand'       => $brand_terms ? $brand_terms[0] : '',
+		'data-price'       => wp_strip_all_tags( wc_price( $product->get_price() ) ),
+		'data-image'       => $image_id ? (string) wp_get_attachment_image_url( $image_id, 'medium' ) : '',
+		'data-url'         => get_permalink( $product->get_id() ),
+		'data-badge'       => $badge['text'],
+		'data-badge-class' => $badge['class'],
+		'data-description' => $details['description'],
+		'data-specs'       => wp_json_encode( $details['specs'] ),
+	);
+
+	$html = '';
+	foreach ( $attrs as $name => $value ) {
+		$html .= sprintf( ' %s="%s"', $name, esc_attr( $value ) );
+	}
+	return $html;
+}
