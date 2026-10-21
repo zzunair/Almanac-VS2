@@ -4,11 +4,13 @@ global $product;
 if ( ! $product instanceof WC_Product ) {
 	$product = wc_get_product( get_the_ID() );
 }
-$cats  = vss_product_categories( $product->get_id() );
-$crumb = array( 'Home', 'Shop' );
+$items = array(
+	array( 'label' => 'Home', 'url' => home_url( '/' ) ),
+	array( 'label' => 'Shop', 'url' => wc_get_page_permalink( 'shop' ) ),
+);
+$cats = vss_product_categories( $product->get_id(), 'terms' );
 if ( $cats ) {
-	$crumb[] = $cats[0];
+	$items = array_merge( $items, vss_breadcrumb_term_items( $cats[0] ) );
 }
-$crumb[] = $product->get_name();
-?>
-<div class="tw-container tw-breadcrumb"><?php echo esc_html( implode( ' / ', $crumb ) ); ?></div>
+$items[] = array( 'label' => $product->get_name(), 'url' => get_permalink( $product->get_id() ) );
+vss_breadcrumb( $items );

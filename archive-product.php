@@ -28,36 +28,11 @@ if ( is_product_taxonomy() ) {
 }
 
 if ( is_search() ) {
-	// WordPress's own "s" search only looks at product title/content, so a
-	// search for a brand or category name ("Husqvarna", "Mowers") would
-	// otherwise come back empty even though matching products exist. Union
-	// title matches with matches-by-taxonomy-name into one id list first,
-	// then filter with "include" -- "s" and tax_query can't be OR'd directly.
-	$search_term = get_search_query();
-	$matched_ids = wc_get_products( array( 'status' => 'publish', 's' => $search_term, 'limit' => -1, 'return' => 'ids' ) );
-
-	foreach ( array( 'product_brand' => 'product_brand', 'product_cat' => 'category' ) as $taxonomy => $query_key ) {
-		$matching_terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => true, 'name__like' => $search_term ) );
-		if ( is_wp_error( $matching_terms ) || ! $matching_terms ) {
-			continue;
-		}
-		$matched_ids = array_merge(
-			$matched_ids,
-			wc_get_products(
-				array(
-					'status'   => 'publish',
-					$query_key => wp_list_pluck( $matching_terms, 'slug' ),
-					'limit'    => -1,
-					'return'   => 'ids',
-				)
-			)
-		);
-	}
-
 	// An empty "include" is ignored by WP_Query (returns everything), so
 	// force a deliberately-unmatchable id instead of falling through to
 	// "show the whole catalog" when nothing actually matched.
-	$args['include'] = array_values( array_unique( $matched_ids ) ) ?: array( 0 );
+	$matched_ids     = function_exists( 'vss_product_search_ids' ) ? vss_product_search_ids( get_search_query() ) : array();
+	$args['include'] = $matched_ids ? $matched_ids : array( 0 );
 }
 
 if ( ! empty( $_GET['product_cat'] ) ) {

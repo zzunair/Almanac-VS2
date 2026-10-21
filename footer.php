@@ -3,8 +3,8 @@
  * The footer for the theme -- matches Footer.dc.html.
  */
 
-$address_lines     = vss_lines( get_theme_mod( 'vss_footer_address', "412 Industrial Pkwy\nMillbrook, OH 43920" ) );
-$phone_email_lines = vss_lines( get_theme_mod( 'vss_footer_phone_email', "(555) 019-2244\nsales@vss-example.com" ) );
+$address_lines     = vss_lines( get_theme_mod( 'vss_footer_address', "123 Main Street\nYour City, ST 00000" ) );
+$phone_email_lines = vss_lines( get_theme_mod( 'vss_footer_phone_email', "(123) 456-7890\nhello@yourstore.com" ) );
 $hours_lines       = vss_lines( get_theme_mod( 'vss_footer_hours', "Mon–Fri · 8am–6pm\nSaturday · 8am–4pm\nSunday · Closed" ) );
 
 $shop_terms = get_terms(
@@ -115,7 +115,7 @@ $footer_company_menu_id = (int) get_theme_mod( 'vss_footer_company_menu', '' );
 	</div>
 	<div class="tw-footer-legal">
 		<span>&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> <?php echo esc_html( get_theme_mod( 'vss_footer_company_name', get_bloginfo( 'name' ) ) ); ?></span>
-		<span><?php echo esc_html( get_theme_mod( 'vss_footer_legal_right', 'Design mockup — no transactions are processed on this site.' ) ); ?></span>
+		<span><?php echo esc_html( get_theme_mod( 'vss_footer_legal_right', 'All rights reserved.' ) ); ?></span>
 	</div>
 </footer>
 

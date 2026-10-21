@@ -1,0 +1,53 @@
+name: Release theme
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read theme version
+        id: theme
+        run: |
+          VERSION=$(grep -m1 '^Version:' style.css | awk '{print $2}' | tr -d '\r')
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "::error::Tag v${TAG} does not match style.css Version ${VERSION}. Bump Version in style.css before tagging."
+            exit 1
+          fi
+
+      # The folder inside the zip must stay "Alamnac VS2". WordPress uses it to
+      # replace the installed theme instead of adding a second copy.
+      - name: Build theme zip
+        run: |
+          THEME_SLUG="Alamnac VS2"
+          STAGE="${RUNNER_TEMP}/${THEME_SLUG}"
+          mkdir -p "${STAGE}"
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.gitignore' \
+            --exclude '.gitattributes' \
+            --exclude '*.zip' \
+            ./ "${STAGE}/"
+          mkdir -p "${RUNNER_TEMP}/dist"
+          (cd "${RUNNER_TEMP}" && zip -r "dist/${THEME_SLUG}.zip" "${THEME_SLUG}")
+          echo "ZIP_PATH=${RUNNER_TEMP}/dist/${THEME_SLUG}.zip" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "TargetWeb - Almanac ${{ steps.theme.outputs.version }}"
+          generate_release_notes: true
+          files: ${{ env.ZIP_PATH }}

@@ -3,9 +3,9 @@
  * WooCommerce integration: theme support, the custom "Brand" taxonomy
  * (WooCommerce has no built-in brand taxonomy), and search config.
  *
- * archive-product.php and single-product.php in the theme root fully
- * replace WooCommerce's own markup (no cart/checkout, no upsells) since
- * this site only ever reserves an item in-store -- it never sells online.
+ * archive-product.php and single-product.php in the theme root replace
+ * WooCommerce's catalog markup. Cart and checkout stay off unless
+ * Site-Wide Settings → Commerce is enabled.
  */
 
 function vss_woocommerce_setup() {
@@ -45,32 +45,149 @@ function vss_product_search_url() {
 }
 
 /**
- * This theme never uses WooCommerce's cart/checkout -- items are only
- * reserved in-store via the on-page form. Strip the related front-end
- * assets so nothing half-wired leaks into the design.
+ * Site-Wide Settings → Commerce. Off by default so the site stays a showroom.
+ */
+function vss_ecommerce_enabled() {
+	return (bool) get_theme_mod( 'vss_enable_ecommerce', false );
+}
+
+/**
+ * Header cart link. Also the markup replaced by WooCommerce's cart
+ * fragments, so the count updates after an Add to cart click.
+ */
+function vss_cart_link() {
+	if ( ! vss_ecommerce_enabled() || ! function_exists( 'wc_get_cart_url' ) ) {
+		return;
+	}
+
+	$count = ( function_exists( 'WC' ) && WC()->cart ) ? WC()->cart->get_cart_contents_count() : 0;
+	$label = $count ? sprintf( 'Cart, %d items', $count ) : 'Cart';
+	?>
+	<a class="tw-cart-link" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
+		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+			<path d="M6 6h15l-1.5 9h-12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+			<path d="M6 6L5 3H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+			<circle cx="9" cy="20" r="1.4" fill="currentColor"/>
+			<circle cx="18" cy="20" r="1.4" fill="currentColor"/>
+		</svg>
+		<span class="screen-reader-text">Cart</span>
+		<?php if ( $count ) : ?>
+			<span class="tw-cart-count"><?php echo (int) $count; ?></span>
+		<?php endif; ?>
+	</a>
+	<?php
+}
+
+/**
+ * Keep the header count in sync with ajax Add to cart.
+ */
+function vss_cart_fragments( $fragments ) {
+	if ( ! vss_ecommerce_enabled() ) {
+		return $fragments;
+	}
+	ob_start();
+	vss_cart_link();
+	$fragments['a.tw-cart-link'] = ob_get_clean();
+	return $fragments;
+}
+add_filter( 'woocommerce_add_to_cart_fragments', 'vss_cart_fragments' );
+
+/**
+ * Cart scripts stay off unless Commerce is enabled. With it on, ajax Add
+ * to cart (including the homepage catalog) and the header count need them.
  */
 function vss_dequeue_woocommerce_cart_scripts() {
+	if ( vss_ecommerce_enabled() ) {
+		wp_enqueue_script( 'wc-add-to-cart' );
+		wp_enqueue_script( 'wc-cart-fragments' );
+		return;
+	}
 	wp_dequeue_script( 'wc-cart-fragments' );
 	wp_dequeue_script( 'wc-add-to-cart' );
 }
 add_action( 'wp_enqueue_scripts', 'vss_dequeue_woocommerce_cart_scripts', 20 );
 
 /**
- * WooCommerce always creates Cart / Checkout / My Account pages, but this
- * theme has no template for them -- a visitor who ends up there (an old
- * link, a bot, a stray "add to cart") would see WooCommerce's raw,
- * unstyled block markup. Send them somewhere real instead.
+ * Cart and Checkout are only reachable while Commerce is on. My Account
+ * is unused, so it always goes to the shop.
  */
 function vss_redirect_unused_woocommerce_pages() {
 	if ( is_admin() || ! function_exists( 'is_cart' ) ) {
 		return;
 	}
-	if ( is_cart() || is_checkout() || is_account_page() ) {
+	$blocked = array( is_account_page() );
+	if ( ! vss_ecommerce_enabled() ) {
+		$blocked[] = is_cart();
+		$blocked[] = is_checkout();
+	}
+	if ( in_array( true, $blocked, true ) ) {
 		wp_safe_redirect( function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/shop/' ) );
 		exit;
 	}
 }
 add_action( 'template_redirect', 'vss_redirect_unused_woocommerce_pages' );
+
+/**
+ * Product IDs matching normal product text plus SKU, variation SKU, brand,
+ * category, tag, global attributes, and custom product attributes.
+ */
+function vss_product_search_ids( $term ) {
+	if ( ! function_exists( 'wc_get_products' ) ) {
+		return array();
+	}
+	$term = trim( sanitize_text_field( $term ) );
+	if ( '' === $term ) {
+		return array();
+	}
+
+	$ids = wc_get_products(
+		array(
+			'status' => 'publish',
+			's'      => $term,
+			'limit'  => -1,
+			'return' => 'ids',
+		)
+	);
+
+	global $wpdb;
+	$like = '%' . $wpdb->esc_like( $term ) . '%';
+	$meta_ids = $wpdb->get_col(
+		$wpdb->prepare(
+			"SELECT DISTINCT CASE WHEN p.post_type = 'product_variation' THEN p.post_parent ELSE p.ID END
+			FROM {$wpdb->postmeta} pm
+			INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			WHERE pm.meta_key IN ('_sku', '_product_attributes')
+			AND pm.meta_value LIKE %s
+			AND p.post_type IN ('product', 'product_variation')",
+			$like
+		)
+	);
+	$ids = array_merge( $ids, $meta_ids );
+
+	$taxonomies = array_filter(
+		get_object_taxonomies( 'product', 'names' ),
+		static function ( $taxonomy ) {
+			return in_array( $taxonomy, array( 'product_cat', 'product_tag', 'product_brand' ), true )
+				|| 0 === strpos( $taxonomy, 'pa_' );
+		}
+	);
+	if ( $taxonomies ) {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomies,
+				'hide_empty' => true,
+				'name__like' => $term,
+			)
+		);
+		if ( ! is_wp_error( $terms ) ) {
+			foreach ( $terms as $matched_term ) {
+				$ids = array_merge( $ids, get_objects_in_term( $matched_term->term_id, $matched_term->taxonomy ) );
+			}
+		}
+	}
+
+	return array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+}
 
 /**
  * Live search-as-you-type suggestions for the header search box (behind
@@ -91,51 +208,16 @@ function vss_ajax_search_suggest() {
 		wp_send_json( array() );
 	}
 
-	$limit    = 6;
-	$products = wc_get_products(
+	$limit       = 6;
+	$matched_ids = vss_product_search_ids( $term );
+	$products    = wc_get_products(
 		array(
 			'status'  => 'publish',
-			's'       => $term,
+			'include' => $matched_ids ? $matched_ids : array( 0 ),
 			'limit'   => $limit,
-			'orderby' => 'relevance',
+			'orderby' => 'include',
 		)
 	);
-	$found_ids = wp_list_pluck( $products, 'id' );
-
-	// WordPress's default 's' search only looks at the title/content, so a
-	// search for a brand or category name ("Husqvarna", "Mowers") would
-	// otherwise come back empty even though matching products exist.
-	if ( count( $products ) < $limit ) {
-		foreach ( array( 'product_brand' => 'product_brand', 'product_cat' => 'category' ) as $taxonomy => $query_key ) {
-			if ( count( $products ) >= $limit ) {
-				break;
-			}
-			$matching_terms = get_terms(
-				array(
-					'taxonomy'   => $taxonomy,
-					'hide_empty' => true,
-					'name__like' => $term,
-				)
-			);
-			if ( is_wp_error( $matching_terms ) || ! $matching_terms ) {
-				continue;
-			}
-			$more = wc_get_products(
-				array(
-					'status'  => 'publish',
-					$query_key => wp_list_pluck( $matching_terms, 'slug' ),
-					'limit'   => $limit - count( $products ),
-					'exclude' => $found_ids,
-				)
-			);
-			foreach ( $more as $product ) {
-				if ( ! in_array( $product->get_id(), $found_ids, true ) ) {
-					$products[]  = $product;
-					$found_ids[] = $product->get_id();
-				}
-			}
-		}
-	}
 
 	$results = array();
 	foreach ( $products as $product ) {

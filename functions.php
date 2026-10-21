@@ -1,6 +1,6 @@
 <?php
 /**
- * Almanac VS theme functions.
+ * Theme functions.
  */
 
 // Tied to style.css's own last-modified time so every asset that uses this
@@ -12,6 +12,8 @@ require_once get_template_directory() . '/inc/section-defs.php';
 require_once get_template_directory() . '/inc/template-functions.php';
 require_once get_template_directory() . '/inc/customizer.php';
 require_once get_template_directory() . '/inc/woocommerce.php';
+require_once get_template_directory() . '/inc/seo.php';
+require_once get_template_directory() . '/inc/maintenance.php';
 
 function vss_setup() {
 	add_theme_support( 'title-tag' );
@@ -46,7 +48,8 @@ function vss_enqueue_assets() {
 	$font = get_theme_mod( 'vss_font_family', 'Manrope' );
 	wp_enqueue_style( 'vss-fonts', vss_google_font_url( $font ), array(), null );
 	wp_enqueue_style( 'vss-style', get_stylesheet_uri(), array(), VSS_VERSION );
-	wp_enqueue_script( 'vss-frontend', get_template_directory_uri() . '/assets/js/frontend.js', array(), VSS_VERSION, true );
+	$script_deps = ( function_exists( 'vss_ecommerce_enabled' ) && vss_ecommerce_enabled() ) ? array( 'jquery' ) : array();
+	wp_enqueue_script( 'vss-frontend', get_template_directory_uri() . '/assets/js/frontend.js', $script_deps, VSS_VERSION, true );
 	wp_localize_script(
 		'vss-frontend',
 		'vssSearch',
@@ -55,8 +58,86 @@ function vss_enqueue_assets() {
 			'nonce'   => wp_create_nonce( 'vss_search' ),
 		)
 	);
+	wp_localize_script(
+		'vss-frontend',
+		'vssContactForm',
+		array(
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'nonce'   => wp_create_nonce( 'vss_contact_message' ),
+		)
+	);
 }
 add_action( 'wp_enqueue_scripts', 'vss_enqueue_assets' );
+
+/**
+ * Sends the contact page form. The product reserve form is left untouched.
+ */
+function vss_submit_contact_message() {
+	check_ajax_referer( 'vss_contact_message', 'nonce' );
+
+	$name    = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
+	$email   = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+	$phone   = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
+	$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+
+	if ( ! $name || ! is_email( $email ) || ! $message ) {
+		wp_send_json_error( array( 'message' => 'Please complete the required fields.' ), 400 );
+	}
+
+	$recipient = sanitize_email( vss_field( 'contact', 'form_info', 'recipient_email' ) );
+	if ( ! is_email( $recipient ) ) {
+		$recipient = sanitize_email( get_option( 'admin_email' ) );
+	}
+	$sender_name  = sanitize_text_field( vss_field( 'contact', 'form_info', 'sender_name' ) );
+	$sender_email = sanitize_email( vss_field( 'contact', 'form_info', 'sender_email' ) );
+	if ( '' === $sender_name ) {
+		$sender_name = get_bloginfo( 'name' );
+	}
+	if ( ! is_email( $sender_email ) ) {
+		$sender_email = sanitize_email( get_option( 'admin_email' ) );
+	}
+	$subject = sanitize_text_field( vss_field( 'contact', 'form_info', 'subject' ) );
+	if ( '' === $subject ) {
+		$subject = 'New contact message';
+	}
+	$body    = implode(
+		"\n",
+		array(
+			'Name: ' . $name,
+			'Email: ' . $email,
+			'Phone: ' . ( $phone ? $phone : 'Not provided' ),
+			'',
+			'Message:',
+			$message,
+		)
+	);
+	$from_email = static function () use ( $sender_email ) {
+		return $sender_email;
+	};
+	$from_name  = static function () use ( $sender_name ) {
+		return $sender_name;
+	};
+	add_filter( 'wp_mail_from', $from_email );
+	add_filter( 'wp_mail_from_name', $from_name );
+	$sent = wp_mail(
+		$recipient,
+		$subject,
+		$body,
+		array(
+			'Content-Type: text/plain; charset=UTF-8',
+			'Reply-To: ' . $name . ' <' . $email . '>',
+		)
+	);
+	remove_filter( 'wp_mail_from', $from_email );
+	remove_filter( 'wp_mail_from_name', $from_name );
+
+	if ( ! $sent ) {
+		wp_send_json_error( array( 'message' => 'The message could not be sent.' ), 500 );
+	}
+	wp_send_json_success();
+}
+add_action( 'wp_ajax_vss_contact_message', 'vss_submit_contact_message' );
+add_action( 'wp_ajax_nopriv_vss_contact_message', 'vss_submit_contact_message' );
 
 /**
  * Prints the site-wide color + font CSS variables from Customizer >
@@ -141,7 +222,7 @@ function vss_woocommerce_missing_notice() {
 	}
 	?>
 	<div class="notice notice-error">
-		<p><strong>Almanac VS</strong> requires the WooCommerce plugin to show products, the Shop page, and related sections. Please <a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=woocommerce&tab=search&type=term' ) ); ?>">install and activate WooCommerce</a>.</p>
+		<p><strong><?php echo esc_html( wp_get_theme()->get( 'Name' ) ); ?></strong> requires the WooCommerce plugin to show products, the Shop page, and related sections. Please <a href="<?php echo esc_url( admin_url( 'plugin-install.php?s=woocommerce&tab=search&type=term' ) ); ?>">install and activate WooCommerce</a>.</p>
 	</div>
 	<?php
 }
